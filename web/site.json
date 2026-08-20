@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "name": "readygate",
+  "github": "https://github.com/SuperMarioYL/readygate",
+  "host": "readygate.lei6393.com",
+  "lang": { "primary": "zh", "toggle": true },
+  "accent": ["#0071E3"],
+  "hero": {
+    "eyebrow": { "zh": "本地 · 一条命令 · 证书级", "en": "Local · One command · Certified" },
+    "headline": {
+      "zh": "指向 coding agent 之前\n先验明端点能不能干活",
+      "en": "Before you point your agent at it\nknow if it can actually make tool calls"
+    },
+    "sub": {
+      "zh": "国产模型跑得起来，不等于 tool-calling 稳。ReadyGate 用一套校准探针打端点、坏了在请求级修好、最后给出 yes/no 证书。",
+      "en": "A running local CN model isn't the same as a stable tool-calling endpoint. ReadyGate probes with a calibrated suite, repairs breakage at the request level, and emits a single yes/no certificate."
+    },
+    "command": "readygate probe http://localhost:8000/v1",
+    "cta": { "zh": "看证书", "en": "See certificate" },
+    "ctaGithub": { "zh": "GitHub", "en": "GitHub" },
+    "scroll": { "zh": "怎么做到的", "en": "How it works" }
+  },
+  "advantages": [
+    {
+      "title": {
+        "zh": "坏了它会先帮你修",
+        "en": "It fixes what it finds"
+      },
+      "body": {
+        "zh": "chat-template 没配对、tool-call JSON 拼坏了——ReadyGate 在请求级别修好，绝不改你的服务器配置文件。修完重验一遍，修没修好你看得见。",
+        "en": "Mismatched chat-template, malformed tool-call JSON — ReadyGate fixes these at the request level, never touching your server config. It re-verifies after repair, so you see exactly what changed."
+      },
+      "chips": [
+        "› chat-template 修复",
+        "› JSON 规整化",
+        "› 修完自动重验"
+      ]
+    },
+    {
+      "title": {
+        "zh": "给国产模型校准的探针",
+        "en": "Probes calibrated for CN models"
+      },
+      "body": {
+        "zh": "不是 OpenAI 通用探测——探针集针对 Qwen3、DeepSeek V4、GLM-5.2、Kimi K3 的 tool-calling 协议逐一校准，覆盖单次调用、嵌套参数、多工具并发三层。",
+        "en": "Not generic OpenAI probes — the suite is calibrated against Qwen3, DeepSeek V4, GLM-5.2, and Kimi K3 tool-calling protocols, covering single calls, nested arguments, and parallel tool use."
+      },
+      "chips": [
+        "› Qwen3 / DeepSeek V4 / GLM / Kimi",
+        "› 三层探针覆盖",
+        "› 模型族自动识别"
+      ]
+    },
+    {
+      "title": {
+        "zh": "一张可复现的证书",
+        "en": "A reproducible certificate"
+      },
+      "body": {
+        "zh": "结果不是一句\"能用\"——是一张按层拆解的 AgentReadinessCertificate：哪层过、哪层修过、哪层还在断。可以存档、可以发给队友、可以进 CI 卡质量。",
+        "en": "The result isn't just \"works\" — it's a per-layer AgentReadinessCertificate: which layers passed, which were repaired, which still fail. Archive it, share it with your team, gate your CI on it."
+      },
+      "chips": [
+        "› JSON 证书文件",
+        "› 逐层拆解",
+        "› 可进 CI"
+      ]
+    }
+  ],
+  "scene": {
+    "kind": "hub-nodes",
+    "nodes": ["Qwen3", "DeepSeek V4", "GLM-5.2", "Kimi K3"]
+  },
+  "footer": {
+    "tag": { "zh": "MIT 开源 · 本地优先", "en": "MIT open source · local-first" }
+  }
+}
