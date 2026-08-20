@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 360" width="880" height="360"
+     font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif"
+     role="img" aria-label="架构：CLI → Probe Engine → Validator → Certificate，失败经 Repairer 回流重探">
+  <defs>
+    <marker id="ah-l" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#B9B9C2"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="880" height="360" fill="#F5F5F7"/>
+
+  <!-- static connectors (with arrowheads) -->
+  <g stroke="#C9C9D0" stroke-width="1.5" fill="none">
+    <line x1="170" y1="130" x2="220" y2="130" marker-end="url(#ah-l)"/>
+    <line x1="420" y1="130" x2="460" y2="130" marker-end="url(#ah-l)"/>
+    <line x1="620" y1="130" x2="660" y2="130" marker-end="url(#ah-l)"/>
+    <line x1="320" y1="168" x2="320" y2="250" marker-end="url(#ah-l)"/>
+    <line x1="540" y1="168" x2="540" y2="250" marker-end="url(#ah-l)"/>
+    <path d="M460,250 L460,210 L420,210 L420,168" marker-end="url(#ah-l)"/>
+  </g>
+
+  <!-- marching-dash data flow (dasharray 6 10 = 16; 32→0 = 2 cycles, seamless) -->
+  <g stroke-width="1.5" fill="none" stroke-linecap="round">
+    <line x1="170" y1="130" x2="216" y2="130" stroke="#0071E3" stroke-opacity="0.55" stroke-dasharray="6 10">
+      <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1.6s" repeatCount="indefinite"/>
+    </line>
+    <line x1="420" y1="130" x2="456" y2="130" stroke="#5E5CE6" stroke-opacity="0.55" stroke-dasharray="6 10">
+      <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1.6s" begin="-0.3s" repeatCount="indefinite"/>
+    </line>
+    <line x1="620" y1="130" x2="656" y2="130" stroke="#0071E3" stroke-opacity="0.55" stroke-dasharray="6 10">
+      <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1.6s" begin="-0.6s" repeatCount="indefinite"/>
+    </line>
+    <line x1="320" y1="168" x2="320" y2="246" stroke="#10A37F" stroke-opacity="0.55" stroke-dasharray="6 10">
+      <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1.6s" begin="-0.9s" repeatCount="indefinite"/>
+    </line>
+    <line x1="540" y1="168" x2="540" y2="246" stroke="#5E5CE6" stroke-opacity="0.55" stroke-dasharray="6 10">
+      <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1.6s" begin="-1.2s" repeatCount="indefinite"/>
+    </line>
+    <path d="M460,250 L460,210 L420,210 L420,172" stroke="#5E5CE6" stroke-opacity="0.55" stroke-dasharray="6 10">
+      <animate attributeName="stroke-dashoffset" from="32" to="0" dur="1.6s" begin="-1.5s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
+  <!-- data packets -->
+  <g>
+    <circle r="3" fill="#0071E3">
+      <animateMotion path="M170,130 L216,130" dur="2.4s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur="2.4s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="3" fill="#5E5CE6">
+      <animateMotion path="M420,130 L456,130" dur="2.4s" begin="-0.6s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur="2.4s" begin="-0.6s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="3" fill="#0071E3">
+      <animateMotion path="M620,130 L656,130" dur="2.4s" begin="-1.2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur="2.4s" begin="-1.2s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="3" fill="#10A37F">
+      <animateMotion path="M320,168 L320,246" dur="2.6s" begin="-1.8s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur="2.6s" begin="-1.8s" repeatCount="indefinite"/>
+    </circle>
+    <circle r="3" fill="#5E5CE6">
+      <animateMotion path="M460,250 L460,210 L420,210 L420,172" dur="3s" begin="-2.2s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur="3s" begin="-2.2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- edge labels -->
+  <g fill="#6E6E73" font-size="10" font-weight="500">
+    <text x="640" y="122" text-anchor="middle">pass</text>
+    <text x="328" y="212" text-anchor="start">probe</text>
+    <text x="548" y="212" text-anchor="start">fail</text>
+    <text x="430" y="202" text-anchor="end">re-probe</text>
+  </g>
+
+  <!-- nodes (breathing on Probe, Validator, endpoint, Repairer) -->
+  <g>
+    <rect x="30" y="92" width="140" height="76" rx="15" fill="#0071E3" fill-opacity="0.10" stroke="#0071E3" stroke-width="1.5"/>
+    <text x="100" y="135" text-anchor="middle" font-size="15" font-weight="600" fill="#0A4F9E">CLI</text>
+
+    <rect x="220" y="92" width="200" height="76" rx="15" fill="#5E5CE6" fill-opacity="0.10" stroke="#5E5CE6" stroke-width="1.5">
+      <animate attributeName="fill-opacity" values="0.10;0.18;0.10" keyTimes="0;0.5;1" dur="3.2s"
+               calcMode="spline" keySplines="0.4 0 0.6 1;0.4 0 0.6 1" repeatCount="indefinite"/>
+    </rect>
+    <text x="320" y="128" text-anchor="middle" font-size="15" font-weight="600" fill="#4B3FC4">Probe Engine</text>
+    <text x="320" y="148" text-anchor="middle" font-size="11" font-weight="400" fill="#6E6E73">CNToolCallSuite + profiles</text>
+
+    <rect x="460" y="92" width="160" height="76" rx="15" fill="#5E5CE6" fill-opacity="0.10" stroke="#5E5CE6" stroke-width="1.5">
+      <animate attributeName="fill-opacity" values="0.10;0.18;0.10" keyTimes="0;0.5;1" dur="3.2s" begin="-0.8s"
+               calcMode="spline" keySplines="0.4 0 0.6 1;0.4 0 0.6 1" repeatCount="indefinite"/>
+    </rect>
+    <text x="540" y="135" text-anchor="middle" font-size="15" font-weight="600" fill="#4B3FC4">Validator</text>
+
+    <rect x="660" y="92" width="190" height="76" rx="15" fill="#0071E3" fill-opacity="0.10" stroke="#0071E3" stroke-width="1.5"/>
+    <text x="755" y="128" text-anchor="middle" font-size="15" font-weight="600" fill="#0A4F9E">Certificate</text>
+    <text x="755" y="148" text-anchor="middle" font-size="10" font-weight="400" fill="#6E6E73">stdout + readygate-cert.json</text>
+
+    <rect x="240" y="250" width="160" height="70" rx="15" fill="#10A37F" fill-opacity="0.10" stroke="#10A37F" stroke-width="1.5">
+      <animate attributeName="fill-opacity" values="0.10;0.18;0.10" keyTimes="0;0.5;1" dur="3.2s" begin="-1.6s"
+               calcMode="spline" keySplines="0.4 0 0.6 1;0.4 0 0.6 1" repeatCount="indefinite"/>
+    </rect>
+    <text x="320" y="290" text-anchor="middle" font-size="14" font-weight="600" fill="#0B6B53">local /v1 endpoint</text>
+
+    <rect x="460" y="250" width="160" height="70" rx="15" fill="#5E5CE6" fill-opacity="0.10" stroke="#5E5CE6" stroke-width="1.5">
+      <animate attributeName="fill-opacity" values="0.10;0.18;0.10" keyTimes="0;0.5;1" dur="3.2s" begin="-2.4s"
+               calcMode="spline" keySplines="0.4 0 0.6 1;0.4 0 0.6 1" repeatCount="indefinite"/>
+    </rect>
+    <text x="540" y="290" text-anchor="middle" font-size="15" font-weight="600" fill="#4B3FC4">Repairer</text>
+    <text x="540" y="306" text-anchor="middle" font-size="10" font-weight="400" fill="#6E6E73">request-level fixers</text>
+  </g>
+</svg>
