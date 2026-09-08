@@ -1,7 +1,7 @@
 [project]
 name = "readygate"
 version = "0.1.0"
-description = "Pre-flight agent-readiness gate for local CN model endpoints — agent-ready: yes/no in one command."
+description = "Probe OpenAI-compatible tool-call responses, retry supported request repairs, and report per-layer validation results."
 readme = "README.md"
 license = "MIT"
 authors = [{ name = "SuperMarioYL" }]

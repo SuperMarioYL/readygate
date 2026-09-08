@@ -1,77 +1,215 @@
 {
-  "schema": 1,
+  "schema": 3,
   "name": "readygate",
   "github": "https://github.com/SuperMarioYL/readygate",
   "host": "readygate.lei6393.com",
-  "lang": { "primary": "zh", "toggle": true },
-  "accent": ["#0071E3"],
+  "palette": "auto",
+  "lang": {
+    "primary": "en",
+    "toggle": true
+  },
+  "meta": {
+    "visual_style": "neon-particle",
+    "demo_source": "docs/demo-results.json"
+  },
   "hero": {
-    "eyebrow": { "zh": "本地 · 一条命令 · 证书级", "en": "Local · One command · Certified" },
     "headline": {
-      "zh": "指向 coding agent 之前\n先验明端点能不能干活",
-      "en": "Before you point your agent at it\nknow if it can actually make tool calls"
+      "en": "Check the tool-call path before connecting an agent.",
+      "zh": "接入 Agent 前，先检查工具调用链路。"
     },
     "sub": {
-      "zh": "国产模型跑得起来，不等于 tool-calling 稳。ReadyGate 用一套校准探针打端点、坏了在请求级修好、最后给出 yes/no 证书。",
-      "en": "A running local CN model isn't the same as a stable tool-calling endpoint. ReadyGate probes with a calibrated suite, repairs breakage at the request level, and emits a single yes/no certificate."
+      "en": "ReadyGate runs a small tool-call probe suite against a configured endpoint and records endpoint, structured-call and argument-JSON results.",
+      "zh": "ReadyGate 对配置端点运行小型工具调用探针集，记录端点、结构化调用与参数 JSON 三层结果。"
     },
-    "command": "readygate probe http://localhost:8000/v1",
-    "cta": { "zh": "看证书", "en": "See certificate" },
-    "ctaGithub": { "zh": "GitHub", "en": "GitHub" },
-    "scroll": { "zh": "怎么做到的", "en": "How it works" }
+    "href": "#quickstart"
   },
   "advantages": [
     {
       "title": {
-        "zh": "坏了它会先帮你修",
-        "en": "It fixes what it finds"
+        "en": "Layered results",
+        "zh": "分层结果"
       },
       "body": {
-        "zh": "chat-template 没配对、tool-call JSON 拼坏了——ReadyGate 在请求级别修好，绝不改你的服务器配置文件。修完重验一遍，修没修好你看得见。",
-        "en": "Mismatched chat-template, malformed tool-call JSON — ReadyGate fixes these at the request level, never touching your server config. It re-verifies after repair, so you see exactly what changed."
-      },
-      "chips": [
-        "› chat-template 修复",
-        "› JSON 规整化",
-        "› 修完自动重验"
-      ]
+        "en": "Separate response availability, call structure and argument JSON.",
+        "zh": "分别检查响应可用性、调用结构与参数 JSON。"
+      }
     },
     {
       "title": {
-        "zh": "给国产模型校准的探针",
-        "en": "Probes calibrated for CN models"
+        "en": "One retry path",
+        "zh": "一次重试流程"
       },
       "body": {
-        "zh": "不是 OpenAI 通用探测——探针集针对 Qwen3、DeepSeek V4、GLM-5.2、Kimi K3 的 tool-calling 协议逐一校准，覆盖单次调用、嵌套参数、多工具并发三层。",
-        "en": "Not generic OpenAI probes — the suite is calibrated against Qwen3, DeepSeek V4, GLM-5.2, and Kimi K3 tool-calling protocols, covering single calls, nested arguments, and parallel tool use."
-      },
-      "chips": [
-        "› Qwen3 / DeepSeek V4 / GLM / Kimi",
-        "› 三层探针覆盖",
-        "› 模型族自动识别"
-      ]
+        "en": "Supported request repairs are visible in the result.",
+        "zh": "支持的请求修复在结果中可见。"
+      }
     },
     {
       "title": {
-        "zh": "一张可复现的证书",
-        "en": "A reproducible certificate"
+        "en": "Save a report",
+        "zh": "保存报告"
       },
       "body": {
-        "zh": "结果不是一句\"能用\"——是一张按层拆解的 AgentReadinessCertificate：哪层过、哪层修过、哪层还在断。可以存档、可以发给队友、可以进 CI 卡质量。",
-        "en": "The result isn't just \"works\" — it's a per-layer AgentReadinessCertificate: which layers passed, which were repaired, which still fail. Archive it, share it with your team, gate your CI on it."
+        "en": "JSON output carries suite and layer evidence.",
+        "zh": "JSON 输出包含探针集与分层证据。"
+      }
+    }
+  ],
+  "demo": {
+    "title": {
+      "en": "Run it on a complete example",
+      "zh": "运行完整示例"
+    },
+    "note": {
+      "en": "Pass an explicit single-quoted arguments fixture through strict and repaired validation.",
+      "zh": "将明确给出的单引号参数 fixture 交给严格校验与修复校验。"
+    },
+    "source": "https://github.com/SuperMarioYL/readygate/blob/main/docs/demo-results.json",
+    "steps": [
+      {
+        "label": "Recorded run",
+        "body": "Pure response validation and supported JSON normalization on an explicit malformed fixture; no live endpoint readiness certificate.",
+        "command": ".venv/bin/python examples/presentation-demo.py",
+        "output": "{\n  \"input_arguments\": \"{'location':'Tokyo'}\",\n  \"strict_layers\": {\n    \"endpoint_stability\": true,\n    \"chat_template\": true,\n    \"tool_call_json\": false\n  },\n  \"repaired_layers\": {\n    \"endpoint_stability\": true,\n    \"chat_template\": true,\n    \"tool_call_json\": true\n  },\n  \"strict_pass\": false,\n  \"repaired_pass\": true\n}",
+        "image": "/assets/presentation/demo-0-light.svg",
+        "imageDark": "/assets/presentation/demo-0-dark.svg"
+      }
+    ]
+  },
+  "quickstart": {
+    "title": {
+      "en": "Try it locally",
+      "zh": "本地上手"
+    },
+    "body": {
+      "en": "Pass an explicit single-quoted arguments fixture through strict and repaired validation.",
+      "zh": "将明确给出的单引号参数 fixture 交给严格校验与修复校验。"
+    },
+    "steps": [
+      {
+        "title": {
+          "en": "Install from source",
+          "zh": "从源码安装"
+        },
+        "code": "git clone https://github.com/SuperMarioYL/readygate.git\ncd readygate\nuv venv .venv\nuv pip install --python .venv/bin/python -e .\nsource .venv/bin/activate"
       },
-      "chips": [
-        "› JSON 证书文件",
-        "› 逐层拆解",
-        "› 可进 CI"
-      ]
+      {
+        "title": {
+          "en": "Run the included example",
+          "zh": "运行随仓示例"
+        },
+        "code": ".venv/bin/python examples/presentation-demo.py"
+      }
+    ]
+  },
+  "limitations": [
+    {
+      "en": "A passing suite is bounded to those probes. It does not prove general agent readiness, full argument-schema conformance or long-term endpoint stability.",
+      "zh": "探针通过只覆盖这些案例，不证明通用 Agent 能力、完整参数 schema 合规或长期端点稳定性。"
+    },
+    {
+      "en": "Repair applies to this probe workflow and does not persistently fix the server or configure another harness.",
+      "zh": "修复作用于本探测流程，不会持久修改服务器或配置其他调用框架。"
+    },
+    {
+      "en": "The recorded offline example exercises the validator on a fixture and does not certify a live endpoint.",
+      "zh": "记录的离线示例只在 fixture 上运行校验器，不认证在线端点。"
     }
   ],
   "scene": {
-    "kind": "hub-nodes",
-    "nodes": ["Qwen3", "DeepSeek V4", "GLM-5.2", "Kimi K3"]
+    "kind": "neon-graph",
+    "fallback": "/assets/presentation/scene-dark.svg",
+    "fallbackLight": "/assets/presentation/scene-light.svg"
   },
-  "footer": {
-    "tag": { "zh": "MIT 开源 · 本地优先", "en": "MIT open source · local-first" }
+  "story": {
+    "intro": {
+      "title": {
+        "en": "A concrete task",
+        "zh": "从实际任务出发"
+      },
+      "body": {
+        "en": "An HTTP response alone does not show that the endpoint emits usable tool calls. Separate layers make it easier to locate a broken response format before a longer agent task begins.",
+        "zh": "HTTP 能响应并不代表端点能输出可用工具调用。分层检查有助于在长任务开始前定位响应格式问题。"
+      }
+    },
+    "sections": [
+      {
+        "title": {
+          "en": "Follow the operation",
+          "zh": "处理过程"
+        },
+        "body": {
+          "en": "ProbeEngine selects the model profile and sends the suite. Strict validation records initial failures; repair_for modifies supported request hints and a single retry is validated with supported argument normalization. The certificate emitter summarizes the initial and final layer results.",
+          "zh": "ProbeEngine 选择模型配置并发送探针。严格校验记录初始失败；repair_for 修改支持的请求提示，重试一次后结合支持的参数归一化再验证。证书模块汇总前后三层结果。"
+        },
+        "image": {
+          "light": "/assets/presentation/process-light.svg",
+          "dark": "/assets/presentation/process-dark.svg",
+          "alt": {
+            "en": "Follow the operation",
+            "zh": "处理过程"
+          }
+        }
+      },
+      {
+        "title": {
+          "en": "How ReadyGate works",
+          "zh": "ReadyGate 的工作方式"
+        },
+        "body": {
+          "en": "ProbeEngine selects the model profile and sends the suite. Strict validation records initial failures; repair_for modifies supported request hints and a single retry is validated with supported argument normalization. The certificate emitter summarizes the initial and final layer results.",
+          "zh": "ProbeEngine 选择模型配置并发送探针。严格校验记录初始失败；repair_for 修改支持的请求提示，重试一次后结合支持的参数归一化再验证。证书模块汇总前后三层结果。"
+        },
+        "image": {
+          "light": "/assets/presentation/architecture-light.svg",
+          "dark": "/assets/presentation/architecture-dark.svg",
+          "alt": {
+            "en": "How ReadyGate works",
+            "zh": "ReadyGate 的工作方式"
+          }
+        }
+      },
+      {
+        "title": {
+          "en": "Connect the pieces",
+          "zh": "输入与输出"
+        },
+        "body": {
+          "en": "The following routes are implemented in the source. Choose the input that matches your task and keep the resulting artifact with your project.",
+          "zh": "以下路径已有源码实现。按任务选择输入，并把生成的结果与项目一起保存。"
+        },
+        "image": {
+          "light": "/assets/presentation/integrations-light.svg",
+          "dark": "/assets/presentation/integrations-dark.svg",
+          "alt": {
+            "en": "Connect the pieces",
+            "zh": "输入与输出"
+          }
+        }
+      }
+    ],
+    "details": [
+      {
+        "title": {
+          "en": "Configuration",
+          "zh": "配置"
+        },
+        "body": {
+          "en": "probe accepts an endpoint, optional --model, --out/-o certificate destination and --timeout/-t. Without --model, the engine queries /models. Online probing makes real requests to the supplied endpoint; the included offline script only calls pure validators.",
+          "zh": "probe 接收端点、可选 --model、--out/-o 结果路径与 --timeout/-t。省略 --model 时查询 /models。在线探测会实际请求指定端点；随仓离线脚本只调用纯校验器。"
+        }
+      },
+      {
+        "title": {
+          "en": "Further use",
+          "zh": "进一步使用"
+        },
+        "body": {
+          "en": "The CLI exposes the following operations. Commands after the example use your own paths or identifiers.",
+          "zh": "CLI 提供以下操作。示例之外的命令需要替换成你的文件路径或标识。"
+        },
+        "code": "readygate probe http://localhost:8000/v1 --model your-model -o readygate-cert.json\nreadygate probe http://localhost:8000/v1 --timeout 60"
+      }
+    ]
   }
 }

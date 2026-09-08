@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "source_revision": "23321b9f200a8c1731bc454c0a1d03afdc253ab4",
+  "scope": "Pure response validation and supported JSON normalization on an explicit malformed fixture; no live endpoint readiness certificate.",
+  "steps": [
+    {
+      "label": "Recorded run",
+      "body": "Pure response validation and supported JSON normalization on an explicit malformed fixture; no live endpoint readiness certificate.",
+      "command": ".venv/bin/python examples/presentation-demo.py",
+      "output": "{\n  \"input_arguments\": \"{'location':'Tokyo'}\",\n  \"strict_layers\": {\n    \"endpoint_stability\": true,\n    \"chat_template\": true,\n    \"tool_call_json\": false\n  },\n  \"repaired_layers\": {\n    \"endpoint_stability\": true,\n    \"chat_template\": true,\n    \"tool_call_json\": true\n  },\n  \"strict_pass\": false,\n  \"repaired_pass\": true\n}"
+    }
+  ]
+}

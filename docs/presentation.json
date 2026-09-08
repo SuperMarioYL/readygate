@@ -1,0 +1,78 @@
+{
+  "name": "readygate",
+  "tagline": "Check the tool-call path before connecting an agent.",
+  "architecture": {
+    "title": "How ReadyGate works",
+    "nodes": [
+      {
+        "title": "Probe suite",
+        "detail": "readygate/suites.py"
+      },
+      {
+        "title": "HTTP engine",
+        "detail": "readygate/probe.py"
+      },
+      {
+        "title": "Request repair",
+        "detail": "readygate/repair.py"
+      },
+      {
+        "title": "Result certificate",
+        "detail": "readygate/certificate.py"
+      }
+    ],
+    "edges": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        2,
+        3
+      ]
+    ]
+  },
+  "process": {
+    "title": "From input to a useful result",
+    "steps": [
+      {
+        "title": "Read fixture",
+        "detail": "Malformed JSON arguments"
+      },
+      {
+        "title": "Strict check",
+        "detail": "JSON layer fails"
+      },
+      {
+        "title": "Normalize and check",
+        "detail": "Supported repair passes"
+      }
+    ],
+    "result": "The malformed JSON fixture fails strict validation and passes the supported normalization path."
+  },
+  "integrations": {
+    "title": "Supported input and output routes",
+    "items": [
+      {
+        "title": "OpenAI-compatible endpoint",
+        "detail": "Models and chat-completions routes"
+      },
+      {
+        "title": "Tool-call suite",
+        "detail": "Single, parallel and nested probes"
+      },
+      {
+        "title": "JSON report",
+        "detail": "Per-layer pass / repaired / fail"
+      },
+      {
+        "title": "Exit status",
+        "detail": "One-shot gate result"
+      }
+    ]
+  }
+}

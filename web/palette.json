@@ -1,0 +1,38 @@
+{
+  "mode": "auto",
+  "id": "56e67d-6ae7ce-b4f6ac-a48687f12a1e",
+  "identity": "https://github.com/supermarioyl/readygate",
+  "primary": "#56e67d",
+  "secondary": "#6ae7ce",
+  "highlight": "#b4f6ac",
+  "dark": {
+    "bg": "#050c0e",
+    "panel": "#0c1719",
+    "code": "#0a1716",
+    "ink": "#f0fdee",
+    "muted": "#95b9af",
+    "line": "#173c26",
+    "primary": "#56e67d",
+    "secondary": "#6ae7ce",
+    "highlight": "#b4f6ac",
+    "accent": "#56e67d",
+    "buttonStart": "#328649",
+    "buttonEnd": "#3c8274",
+    "buttonText": "#ffffff"
+  },
+  "light": {
+    "bg": "#f9fefa",
+    "panel": "#f7fef9",
+    "code": "#f3fdf6",
+    "ink": "#132a21",
+    "muted": "#557b73",
+    "line": "#cbf7d7",
+    "primary": "#318347",
+    "secondary": "#3b7f72",
+    "highlight": "#5b7c57",
+    "accent": "#318347",
+    "buttonStart": "#328649",
+    "buttonEnd": "#3c8274",
+    "buttonText": "#ffffff"
+  }
+}
