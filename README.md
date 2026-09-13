@@ -101,9 +101,11 @@ readygate probe http://localhost:8000/v1 --model your-model -o readygate-cert.js
 readygate probe http://localhost:8000/v1 --timeout 60
 ```
 
+退出码约定：`0` = agent-ready yes，`1` = no，`2` = 用法错误（例如 `--out` 路径不可写）——脚本与 CI 可以直接分支判断，崩溃不会伪装成判定结果。
+
 ## 配置
 
-probe 接收端点、可选 --model、--out/-o 结果路径与 --timeout/-t。省略 --model 时查询 /models。在线探测会实际请求指定端点；随仓离线脚本只调用纯校验器。
+probe 接收端点、可选 --model、--out/-o 结果路径与 --timeout/-t。省略 --model 时查询 /models，并以探测到的模型 id 发起后续请求。在线探测会实际请求指定端点；随仓离线脚本只调用纯校验器。
 
 ## 集成与职责分工
 
@@ -119,9 +121,9 @@ probe 接收端点、可选 --model、--out/-o 结果路径与 --timeout/-t。�
 | 路径 | 已实现职责 |
 | --- | --- |
 | OpenAI-compatible endpoint | Models and chat-completions routes |
-| Tool-call suite | Single, parallel and nested probes |
+| Tool-call suite | Single, parallel, nested and no-tool probes |
 | JSON report | Per-layer pass / repaired / fail |
-| Exit status | One-shot gate result |
+| Exit status | One-shot gate result (0 yes / 1 no / 2 usage error) |
 
 ## 限制与后续方向
 
@@ -129,7 +131,7 @@ probe 接收端点、可选 --model、--out/-o 结果路径与 --timeout/-t。�
 - 修复作用于本探测流程，不会持久修改服务器或配置其他调用框架。
 - 记录的离线示例只在 fixture 上运行校验器，不认证在线端点。
 
-更广探针、更多模型配置与 MCP 连接检查是后续工作；报告应理解为可复现的探针证据。
+v0.2.0 的探针集（`cn-tc-v2`）加入了第四个 `no_tool` 探针：挂载工具但该轮无需调用，模型仍发起调用会被记为 over-eager 失败（不可修复）。更多模型配置与 MCP 连接检查是后续工作；报告应理解为可复现的探针证据。
 
 ## 许可与贡献
 

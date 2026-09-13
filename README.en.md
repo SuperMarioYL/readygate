@@ -101,9 +101,11 @@ readygate probe http://localhost:8000/v1 --model your-model -o readygate-cert.js
 readygate probe http://localhost:8000/v1 --timeout 60
 ```
 
+Exit-code contract: `0` = agent-ready yes, `1` = no, `2` = usage error (e.g. an unwritable `--out` path) — scripts and CI can branch directly, and a crash never masquerades as a verdict.
+
 ## Configuration
 
-probe accepts an endpoint, optional --model, --out/-o certificate destination and --timeout/-t. Without --model, the engine queries /models. Online probing makes real requests to the supplied endpoint; the included offline script only calls pure validators.
+probe accepts an endpoint, optional --model, --out/-o certificate destination and --timeout/-t. Without --model, the engine queries /models and sends the detected model id on subsequent requests. Online probing makes real requests to the supplied endpoint; the included offline script only calls pure validators.
 
 ## Integrations and responsibilities
 
@@ -119,9 +121,9 @@ The following routes are implemented in the source. Choose the input that matche
 | Route | Implemented role |
 | --- | --- |
 | OpenAI-compatible endpoint | Models and chat-completions routes |
-| Tool-call suite | Single, parallel and nested probes |
+| Tool-call suite | Single, parallel, nested and no-tool probes |
 | JSON report | Per-layer pass / repaired / fail |
-| Exit status | One-shot gate result |
+| Exit status | One-shot gate result (0 yes / 1 no / 2 usage error) |
 
 ## Limits and next steps
 
@@ -129,7 +131,7 @@ The following routes are implemented in the source. Choose the input that matche
 - Repair applies to this probe workflow and does not persistently fix the server or configure another harness.
 - The recorded offline example exercises the validator on a fixture and does not certify a live endpoint.
 
-Broader suites, additional model profiles and MCP connection checks are future work. Treat the report as reproducible probe evidence.
+The v0.2.0 suite (`cn-tc-v2`) adds a fourth `no_tool` probe: tools are attached but the turn needs no call, and a model that emits one anyway is recorded as an over-eager failure (not repairable). Additional model profiles and MCP connection checks are future work. Treat the report as reproducible probe evidence.
 
 ## License and contributions
 
