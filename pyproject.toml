@@ -1,6 +1,6 @@
 [project]
 name = "readygate"
-version = "0.1.0"
+version = "0.2.0"
 description = "Probe OpenAI-compatible tool-call responses, retry supported request repairs, and report per-layer validation results."
 readme = "README.md"
 license = "MIT"
