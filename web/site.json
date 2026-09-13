@@ -54,6 +54,16 @@
         "en": "JSON output carries suite and layer evidence.",
         "zh": "JSON 输出包含探针集与分层证据。"
       }
+    },
+    {
+      "title": {
+        "en": "Over-eager detection",
+        "zh": "过度调用检测"
+      },
+      "body": {
+        "en": "A no-tool turn with tools attached flags models that call anyway (cn-tc-v2).",
+        "zh": "挂载工具但无需调用的轮次，会标记仍发起调用的模型（cn-tc-v2）。"
+      }
     }
   ],
   "demo": {
