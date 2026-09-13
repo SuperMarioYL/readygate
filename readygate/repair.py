@@ -49,8 +49,12 @@ def _drop_trailing_commas(raw: str) -> str:
     return re.sub(r",(\s*[}\]])", r"\1", raw)
 
 
-def normalize_arguments(raw: str) -> tuple[object | None, str]:
-    """Best-effort parse of a malformed ``function.arguments`` string.
+def normalize_arguments(raw: object) -> tuple[object | None, str]:
+    """Best-effort parse of a malformed ``function.arguments`` payload.
+
+    Accepts either the spec'd JSON string or — from lax servers that emit the
+    arguments already parsed — a dict, which is returned as valid. Any other
+    non-string type yields a clean finding, never a crash.
 
     Returns ``(parsed_or_None, evidence)``. ``evidence`` describes the fix
     applied (or ``"valid"`` if the input already parsed). The caller decides
@@ -58,6 +62,12 @@ def normalize_arguments(raw: str) -> tuple[object | None, str]:
     """
     if raw is None:
         return None, "missing arguments payload"
+
+    if isinstance(raw, dict):
+        return raw, "already-parsed object"
+
+    if not isinstance(raw, str):
+        return None, "arguments is not a string"
 
     candidate = raw.strip()
     if not candidate:

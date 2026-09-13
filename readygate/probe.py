@@ -79,6 +79,15 @@ def _classify(
     ``repair=False`` (first pass) is strict: malformed JSON fails the
     tool_call_json layer so the verify→repair→re-verify loop has something
     to do. ``repair=True`` (re-verify) applies the json_normalize fixer.
+
+    An empty ``expected_functions`` tuple marks a *no_tool* probe: the
+    correct outcome is a plain content answer with no structured tool call —
+    emitting one is an over-eager finding, not a pass.
+
+    The classifier is total over malformed inputs: any JSON response body,
+    however off-shape (non-dict ``choices[0]``, non-dict ``message``,
+    non-dict ``function``, non-string ``arguments``), classifies into layer
+    evidence — it never raises.
     """
     result = ProbeResult(
         name="",
@@ -98,18 +107,48 @@ def _classify(
         result.evidence[LAYER_ENDPOINT] = "response had no choices"
         return result
 
+    choice = choices[0]
+    if not isinstance(choice, dict):
+        result.evidence[LAYER_ENDPOINT] = "choices[0] is not an object"
+        return result
+    message = choice.get("message") or {}
+    if not isinstance(message, dict):
+        result.evidence[LAYER_ENDPOINT] = "choices[0].message is not an object"
+        return result
+
     # endpoint answered with a structurally valid chat completion
     result.http_ok = True
     result.evidence[LAYER_ENDPOINT] = "ok: choices[0] present"
 
-    message = choices[0].get("message") or {}
     tool_calls = message.get("tool_calls") or []
     content = message.get("content") or ""
+    expects_no_call = not expected_functions
 
     # --- chat_template layer: did the model speak the tool_calls field? ---
     if isinstance(tool_calls, list) and tool_calls:
+        if expects_no_call:
+            result.evidence[LAYER_TEMPLATE] = (
+                f"over-eager: {len(tool_calls)} tool call(s) emitted when none was expected"
+            )
+            result.evidence[LAYER_JSON] = "skipped: over-eager calls are not validated"
+            result.passed = False
+            return result
         result.chat_template_ok = True
         result.evidence[LAYER_TEMPLATE] = f"ok: {len(tool_calls)} tool_call(s) in structured field"
+    elif expects_no_call:
+        # correct outcome for a no-tool turn: answer in content, call nothing
+        content_text = content if isinstance(content, str) else ""
+        if content_text.strip():
+            result.chat_template_ok = True
+            result.tool_call_json_ok = True
+            result.evidence[LAYER_TEMPLATE] = "ok: answered in content with no tool call"
+            result.evidence[LAYER_JSON] = "ok: no call expected, no arguments to validate"
+            result.passed = result.http_ok and result.chat_template_ok and result.tool_call_json_ok
+            return result
+        result.evidence[LAYER_TEMPLATE] = "broken: empty response on a no-tool turn"
+        result.evidence.setdefault(LAYER_JSON, "skipped: chat_template layer failed first")
+        result.passed = False
+        return result
     else:
         # maybe the call is buried in content prose
         recovered = extract_tool_call_from_content(content) if isinstance(content, str) else None
@@ -134,7 +173,10 @@ def _classify(
         if not isinstance(tc, dict):
             json_errors.append(f"call[{idx}] is not an object")
             continue
-        fn = tc.get("function") or {}
+        fn = tc.get("function")
+        if not isinstance(fn, dict):
+            json_errors.append(f"call[{idx}] function is not an object")
+            continue
         name = fn.get("name")
         if name not in expected_functions:
             json_errors.append(f"call[{idx}] name {name!r} not in expected {list(expected_functions)}")
@@ -197,24 +239,33 @@ class ProbeEngine:
     # --- model detection -------------------------------------------------
 
     def detect_model(self) -> tuple[str, ModelProfile]:
-        """Return ``(model_id, profile)`` from ``/v1/models`` (or the --model override)."""
+        """Return ``(model_id, profile)`` from ``/v1/models`` (or the --model override).
+
+        The resolution is also persisted into engine state (``self.model`` /
+        ``self.profile``) so subsequent ``run_probe`` payloads carry the
+        detected id — the default invocation must not ship ``model: ""``.
+        """
         if self.model:
-            return self.model, self.profile or detect_family(self.model)
+            self.profile = self.profile or detect_family(self.model)
+            return self.model, self.profile
         models_url = f"{self.endpoint}/models"
         try:
             resp = self._client.get(models_url)
             resp.raise_for_status()
             data = resp.json()
-        except (httpx.HTTPError, ValueError) as exc:
+        except (httpx.HTTPError, ValueError):
             # no detection possible — fall back to generic so the suite still runs
-            return "", detect_family("")
+            self.profile = detect_family("")
+            return "", self.profile
         first_id = ""
         data_obj = data.get("data") if isinstance(data, dict) else data
         if isinstance(data_obj, list) and data_obj:
             first = data_obj[0]
             if isinstance(first, dict):
                 first_id = str(first.get("id") or "")
-        return first_id, detect_family(first_id)
+        self.model = first_id
+        self.profile = detect_family(first_id)
+        return first_id, self.profile
 
     # --- suite dispatch --------------------------------------------------
 

@@ -2,9 +2,20 @@
 
 from __future__ import annotations
 
+import json
+
+import httpx
+
 import readygate.probe as probe_mod
-from readygate.probe import LAYER_ENDPOINT, LAYER_JSON, LAYER_TEMPLATE, validate_response
-from readygate.suites import build_suite
+from readygate.probe import (
+    LAYER_ENDPOINT,
+    LAYER_JSON,
+    LAYER_TEMPLATE,
+    ProbeEngine,
+    validate_response,
+    validate_response_repaired,
+)
+from readygate.suites import SUITE_VERSION, build_suite
 from readygate.profiles import GENERIC_PROFILE
 
 
@@ -66,6 +77,49 @@ def test_validate_fails_on_no_choices():
     assert r.passed is False
 
 
+# --- malformed response shapes classify, never crash --------------------
+
+
+def test_validate_classifies_non_dict_choice_as_endpoint_failure():
+    # v0.1.0 raised AttributeError: 'str' object has no attribute 'get'
+    r = validate_response({"choices": ["boom"]}, ("get_weather",))
+    assert r.http_ok is False
+    assert r.passed is False
+    assert "choices[0]" in r.evidence[LAYER_ENDPOINT]
+
+
+def test_validate_classifies_non_dict_message_as_endpoint_failure():
+    r = validate_response({"choices": [{"index": 0, "message": "just text"}]}, ("get_weather",))
+    assert r.http_ok is False
+    assert r.passed is False
+    assert "message" in r.evidence[LAYER_ENDPOINT]
+
+
+def test_validate_records_non_dict_function_as_json_finding():
+    tc = {"id": "c1", "type": "function", "function": "get_weather"}
+    r = validate_response(_resp(tool_calls=[tc]), ("get_weather",))
+    assert r.http_ok and r.chat_template_ok
+    assert r.tool_call_json_ok is False
+    assert "function is not an object" in r.evidence[LAYER_JSON]
+
+
+def test_object_arguments_are_a_finding_strict_and_valid_repaired():
+    # lax servers emit arguments already parsed — v0.1.0 crashed on the
+    # re-verify pass with AttributeError: 'dict' object has no attribute 'strip'
+    tc = {
+        "id": "c1",
+        "type": "function",
+        "function": {"name": "get_weather", "arguments": {"location": "Tokyo"}},
+    }
+    strict = validate_response(_resp(tool_calls=[tc]), ("get_weather",))
+    assert strict.chat_template_ok is True
+    assert strict.tool_call_json_ok is False  # spec says arguments is a string
+    assert "not a string" in strict.evidence[LAYER_JSON]
+    repaired = validate_response_repaired(_resp(tool_calls=[tc]), ("get_weather",))
+    assert repaired.tool_call_json_ok is True
+    assert repaired.passed is True
+
+
 # --- chat_template layer -------------------------------------------------
 
 
@@ -109,16 +163,49 @@ def test_validate_fails_on_unexpected_function_name():
     assert "unknown_fn" in r.evidence[LAYER_JSON]
 
 
+# --- no_tool probes: empty expected_functions means no call expected -----
+
+
+def test_no_tool_probe_passes_on_content_answer():
+    r = validate_response(_resp(content="42"), ())
+    assert r.passed is True
+    assert r.http_ok and r.chat_template_ok and r.tool_call_json_ok
+    assert "no tool call" in r.evidence[LAYER_TEMPLATE]
+
+
+def test_no_tool_probe_fails_over_eager_calls():
+    r = validate_response(_resp(tool_calls=[_ok_tool_call()]), ())
+    assert r.passed is False
+    assert r.chat_template_ok is False
+    assert "over-eager" in r.evidence[LAYER_TEMPLATE]
+    assert "skipped" in r.evidence[LAYER_JSON]
+
+
+def test_no_tool_probe_fails_on_empty_response():
+    r = validate_response(_resp(content=""), ())
+    assert r.passed is False
+    assert r.chat_template_ok is False
+    assert "empty" in r.evidence[LAYER_TEMPLATE]
+
+
 # --- suite + detection smoke (no HTTP) -----------------------------------
 
 
-def test_suite_has_three_probes_with_expected_functions():
+def test_suite_has_four_probes_with_expected_functions():
     suite = build_suite(GENERIC_PROFILE)
-    assert len(suite) == 3
+    assert len(suite) == 4
     names = {p.name for p in suite}
-    assert names == {"single_call", "parallel_calls", "nested_args"}
+    assert names == {"single_call", "parallel_calls", "nested_args", "no_tool"}
     assert suite[0].expected_functions == ("get_weather",)
     assert suite[2].expected_functions == ("schedule_meeting",)
+    # the no_tool probe: weather tool attached, but no call expected
+    assert suite[3].expected_functions == ()
+    assert suite[3].tools
+
+
+def test_suite_version_bumped_for_no_tool_probe():
+    # cn-tc-v2 added the no_tool probe; certificates key off this
+    assert SUITE_VERSION == "cn-tc-v2"
 
 
 def test_probe_result_layers_dict_matches_layer_names():
@@ -141,3 +228,76 @@ def test_layer_hint_covers_each_probe():
         probe_mod.LAYER_TEMPLATE,
         probe_mod.LAYER_JSON,
     }
+
+
+# --- engine state: the detected model id must reach the payloads ---------
+
+
+def _ok_completion_response() -> dict:
+    return {
+        "choices": [{
+            "index": 0,
+            "message": {
+                "role": "assistant",
+                "content": None,
+                "tool_calls": [{
+                    "id": "c1",
+                    "type": "function",
+                    "function": {"name": "get_weather", "arguments": '{"location":"Tokyo"}'},
+                }],
+            },
+            "finish_reason": "tool_calls",
+        }],
+    }
+
+
+def _recording_client(log: list[dict], *, models_status: int = 200) -> httpx.Client:
+    def handler(request: httpx.Request) -> httpx.Response:
+        body = json.loads(request.content) if request.content else {}
+        log.append({"path": request.url.path, "body": body})
+        if request.url.path.endswith("/models"):
+            if models_status != 200:
+                return httpx.Response(models_status, json={"error": "boom"})
+            return httpx.Response(200, json={"object": "list", "data": [{"id": "Qwen3.8-27B-Instruct"}]})
+        return httpx.Response(200, json=_ok_completion_response())
+
+    return httpx.Client(transport=httpx.MockTransport(handler))
+
+
+def test_detected_model_id_is_sent_in_probe_payloads():
+    # v0.1.0 shipped "model": "" in every payload while the header and
+    # certificate claimed the detected id — strict servers rejected it.
+    log: list[dict] = []
+    engine = ProbeEngine("http://mock/v1", None, client=_recording_client(log))
+    with engine:
+        detected, profile = engine.detect_model()
+        assert detected == "Qwen3.8-27B-Instruct"
+        assert profile.family == "qwen3"
+        for probe in engine.suite():
+            engine.run_probe(probe)
+    sent = [e["body"]["model"] for e in log if e["path"].endswith("/chat/completions")]
+    assert sent and all(m == "Qwen3.8-27B-Instruct" for m in sent)
+
+
+def test_explicit_model_override_is_sent():
+    log: list[dict] = []
+    engine = ProbeEngine("http://mock/v1", "my-model", client=_recording_client(log))
+    with engine:
+        detected, _profile = engine.detect_model()
+        assert detected == "my-model"
+        engine.run_probe(engine.suite()[0])
+    sent = [e["body"]["model"] for e in log if e["path"].endswith("/chat/completions")]
+    assert sent and all(m == "my-model" for m in sent)
+
+
+def test_unreachable_models_endpoint_falls_back_to_empty_model():
+    # fail-soft: detection failure must not break the probe run
+    log: list[dict] = []
+    engine = ProbeEngine("http://mock/v1", None, client=_recording_client(log, models_status=500))
+    with engine:
+        detected, profile = engine.detect_model()
+        assert detected == ""
+        assert profile.family == "generic"
+        engine.run_probe(engine.suite()[0])
+    sent = [e["body"]["model"] for e in log if e["path"].endswith("/chat/completions")]
+    assert sent == [""]

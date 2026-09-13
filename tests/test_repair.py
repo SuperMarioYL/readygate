@@ -151,3 +151,23 @@ def test_repair_for_no_breakage_is_a_noop():
     repaired, actions = repair_for(probe, broke_template=False, broke_json=False)
     assert actions == []
     assert repaired is probe
+
+
+# --- non-string argument payloads: classify, never crash ----------------
+
+
+def test_normalize_accepts_already_parsed_object():
+    # lax servers emit arguments as a parsed JSON object; v0.1.0 crashed
+    # with AttributeError: 'dict' object has no attribute 'strip'
+    parsed, evidence = normalize_arguments({"location": "Tokyo"})
+    assert parsed == {"location": "Tokyo"}
+    assert "already-parsed" in evidence
+
+
+def test_normalize_rejects_other_non_string_types_cleanly():
+    parsed, evidence = normalize_arguments(42)
+    assert parsed is None
+    assert "not a string" in evidence
+    parsed, evidence = normalize_arguments(["a", "b"])
+    assert parsed is None
+    assert "not a string" in evidence
