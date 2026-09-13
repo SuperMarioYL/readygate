@@ -1,11 +1,13 @@
 """CNToolCallSuite — a versioned set of tool-call probe payloads.
 
-These three probes are calibrated to the breakage patterns endemic to CN
+These four probes are calibrated to the breakage patterns endemic to CN
 models served behind OpenAI-compatible ``/v1`` endpoints:
 
 * ``single_call``   — one tool, one scalar argument (does tool-calling work at all?)
 * ``parallel_calls``— two calls in one turn (does the model emit a *list* of tool_calls?)
 * ``nested_args``   — a tool whose argument is a nested object (does the JSON stay valid?)
+* ``no_tool``       — tools attached but the turn needs no call (does the model
+  refrain, or does it over-eagerly spam tool_calls on every turn?)
 
 The suite version is part of the emitted certificate so a ``yes`` verdict is
 falsifiable and comparable across runs.
@@ -18,7 +20,8 @@ from dataclasses import dataclass, field
 from readygate.profiles import ModelProfile
 
 # Bump when the probe payloads change — certificate consumers key off this.
-SUITE_VERSION = "cn-tc-v1"
+# cn-tc-v2: added the no_tool probe (over-eager tool-call detection).
+SUITE_VERSION = "cn-tc-v2"
 
 
 @dataclass(frozen=True)
@@ -29,7 +32,8 @@ class ToolProbe:
     description: str
     messages: list[dict]              # OpenAI chat messages
     tools: list[dict]                  # OpenAI function-tools schema
-    expected_functions: tuple[str, ...]  # function names a correct response must call
+    expected_functions: tuple[str, ...]  # function names a correct response must call;
+                                         # empty tuple = no call expected (no_tool probe)
 
     @property
     def layer_hint(self) -> str:
@@ -38,6 +42,7 @@ class ToolProbe:
             "single_call": "endpoint_stability",
             "parallel_calls": "chat_template",
             "nested_args": "tool_call_json",
+            "no_tool": "chat_template",
         }.get(self.name, "tool_call_json")
 
 
@@ -151,7 +156,27 @@ def build_suite(profile: ModelProfile) -> list[ToolProbe]:
         expected_functions=("schedule_meeting",),
     )
 
-    return [single, parallel, nested]
+    # Over-eager tool calling: tools are attached but this turn needs no
+    # call — a model that spams tool_calls on every turn is a real agent
+    # breakage pattern, and the correct outcome here is a plain answer.
+    no_tool = ToolProbe(
+        name="no_tool",
+        description="Tools attached but the turn needs no tool call — over-eager calling is a finding.",
+        messages=[
+            {
+                "role": "system",
+                "content": format_hint,
+            },
+            {
+                "role": "user",
+                "content": "What is 17 + 25? Answer directly with just the number. Do not call any tool.",
+            },
+        ],
+        tools=[_weather_tool()],
+        expected_functions=(),
+    )
+
+    return [single, parallel, nested, no_tool]
 
 
 def _format_hint(profile: ModelProfile) -> str:
