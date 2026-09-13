@@ -3,19 +3,19 @@
 One command, ``readygate probe <endpoint>``, runs the full pre-flight:
 
 1. detect the model family from ``/v1/models`` (or honour ``--model``),
-2. send the 3-probe CN tool-call suite,
+2. send the CN tool-call suite,
 3. if any layer failed, apply request-level repair and re-probe once,
 4. emit the ``AgentReadinessCertificate`` (rich stdout + JSON file).
 
-Exit code 0 when ``agent-ready: yes``, 1 otherwise — so a shell one-liner
-or CI step can branch on the verdict.
+Exit codes: ``0`` when ``agent-ready: yes``, ``1`` when ``no``, ``2`` on
+usage errors (e.g. an unwritable ``--out`` path) — so a shell one-liner or
+CI step can branch on the verdict and never mistake a crash for one.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-import httpx
 import typer
 from rich.console import Console
 
@@ -54,6 +54,20 @@ def _root(
     _ = version  # --version handled by callback
 
 
+def _validate_out_path(out: Path) -> None:
+    """Reject an unwritable ``--out`` before any probe traffic runs.
+
+    Knowable-at-parse-time user errors must not burn the full suite
+    wall-clock and then die in a traceback after the certificate table
+    has already printed.
+    """
+    if out.is_dir():
+        raise typer.BadParameter(f"--out target is an existing directory: {out}")
+    parent = out.parent if str(out.parent) else Path(".")
+    if not parent.is_dir():
+        raise typer.BadParameter(f"--out parent directory does not exist: {parent}")
+
+
 @app.command()
 def probe(
     endpoint: str = typer.Argument(..., help="OpenAI-compatible base URL, e.g. http://localhost:8000/v1"),
@@ -72,6 +86,7 @@ def probe(
     timeout: float = typer.Option(30.0, "--timeout", "-t", help="Per-request timeout (seconds)."),
 ) -> None:
     """Probe an endpoint and print agent-ready: YES / NO."""
+    _validate_out_path(out)
     base = endpoint.rstrip("/")
     with ProbeEngine(base, model, timeout=timeout) as engine:
         detected_model, profile = engine.detect_model()
@@ -89,6 +104,12 @@ def probe(
         repairs = []
         for probe, initial in zip(suite, initial_results):
             if initial.passed:
+                final_results.append(initial)
+                continue
+            if not probe.expected_functions:
+                # no_tool probe failed — over-eager tool calling is a
+                # discipline finding; the template repair DEMANDS tool
+                # calls, the opposite of what this turn needs.
                 final_results.append(initial)
                 continue
             broke_template = not initial.chat_template_ok
@@ -116,6 +137,11 @@ def probe(
         final_results=final_results,
         repairs=repairs,
     )
-    emit(cert, str(out), console=console)
+    try:
+        emit(cert, str(out), console=console)
+    except OSError as exc:
+        # permissions / disk-full surfaced after the fail-fast pre-check
+        console.print(f"[red]error[/red] could not write certificate to {out}: {exc}")
+        raise typer.Exit(code=2) from None
 
     raise typer.Exit(code=0 if cert.verdict == "yes" else 1)
